@@ -1,5 +1,6 @@
 #include "audio/AudioWorkerPipeline.h"
 #include "common/Threading.h"
+#include "inference/DummyVoiceConversionBackend.h"
 
 #include <chrono>
 #include <cmath>
@@ -54,6 +55,11 @@ void testAudioWorkerPipeline() {
 
   pipeline.clearQueuesWhenStopped();
   pipeline.resetCounters();
+  inference::DummyBackendSettings backendSettings;
+  backendSettings.gain = 0.25F;
+  inference::DummyVoiceConversionBackend backend(backendSettings);
+  require(backend.loadModel("dummy://worker").succeeded(), "dummy backend load failed");
+  require(pipeline.setInferenceBackend(&backend), "backend should attach before start");
   pipeline.start();
   require(pipeline.running(), "pipeline should be running");
 
@@ -72,14 +78,16 @@ void testAudioWorkerPipeline() {
   require(secondPopUsedWorker, "second callback should consume processed worker output");
 
   for (int i = 0; i < 4; ++i) {
-    require(nearlyEqual(outputLeft[i], firstInput[i]), "worker left output mismatch");
-    require(nearlyEqual(outputRight[i], firstInput[i]), "worker right output mismatch");
+    require(nearlyEqual(outputLeft[i], firstInput[i] * 0.25F), "worker left output mismatch");
+    require(nearlyEqual(outputRight[i], firstInput[i] * 0.25F), "worker right output mismatch");
   }
 
   pipeline.stop();
   require(!pipeline.running(), "pipeline should stop");
 
   stats = pipeline.stats();
+  require(stats.backendAttached, "worker should report attached backend");
+  require(stats.backendErrorBlocks == 0, "backend should not report errors");
   require(stats.consumedOutputBlocks >= 1, "consumed output should be counted");
   require(stats.droppedInputBlocks == 0, "input should not be dropped in nominal path");
   require(stats.lastWorkerProcessUs >= 0, "last worker process time should be available");

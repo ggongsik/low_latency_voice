@@ -71,6 +71,7 @@ public:
     currentSettings.sampleRate = sampleRate;
     currentSettings.blockSize = static_cast<std::size_t>(samplesPerBlockExpected);
     engine_.configure(currentSettings);
+    workerPipeline_.setSampleRate(sampleRate);
   }
 
   void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) override {
@@ -146,6 +147,8 @@ private:
             juce::String(static_cast<int>(workerStats.inputQueueSize)) + "/" +
             juce::String(static_cast<int>(workerStats.outputQueueSize)) + " | late " +
             juce::String(static_cast<juce::int64>(workerStats.lateOutputBlocks)) +
+            " | backend errors " +
+            juce::String(static_cast<juce::int64>(workerStats.backendErrorBlocks)) +
             " | worker avg " +
             juce::String(static_cast<double>(workerStats.averageWorkerProcessUs) / 1000.0, 3) +
             " ms",

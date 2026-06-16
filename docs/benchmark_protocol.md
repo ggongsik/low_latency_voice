@@ -34,6 +34,8 @@ Current stages:
 - `worker_shadow_callback`: callback-side worker queue submit/consume cost.
 - `worker_process_observed`: worker-thread dummy processing time observed through
   atomic stats.
+- `dummy_backend_process`: average process time reported by
+  `DummyVoiceConversionBackend`.
 - `pitch_yin_2048`: C++ YIN F0 estimation on a 2048-sample frame.
 
 CSV columns:

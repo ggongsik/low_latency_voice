@@ -2,6 +2,7 @@
 #include "audio/AudioWorkerPipeline.h"
 #include "common/Threading.h"
 #include "dsp/PitchYIN.h"
+#include "inference/DummyVoiceConversionBackend.h"
 #include "profiler/LatencyProfiler.h"
 
 #include <algorithm>
@@ -62,6 +63,17 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
   }
 
   const float* inputs[] = {monoInput.data()};
+  inference::DummyVoiceConversionBackend dummyBackend;
+  (void)dummyBackend.loadModel("dummy://benchmark");
+
+  common::AudioChunk warmupChunk;
+  warmupChunk.sampleRate = 48000.0;
+  warmupChunk.channels = 1;
+  warmupChunk.frames = monoInput.size();
+  warmupChunk.samples.assign(monoInput.begin(), monoInput.end());
+  (void)dummyBackend.warmUp(warmupChunk, 2);
+
+  (void)workerPipeline.setInferenceBackend(&dummyBackend);
   workerPipeline.setDummyProcessingDelay(std::chrono::microseconds(dummyDelayUs));
   workerPipeline.start();
 
@@ -82,6 +94,10 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
     profiler.record("worker_process_observed",
                     static_cast<double>(workerStats.averageWorkerProcessUs) / 1000.0);
   }
+  const auto backendStats = dummyBackend.stats();
+  if (backendStats.processedChunks > 0) {
+    profiler.record("dummy_backend_process", backendStats.averageProcessMs);
+  }
 
   dsp::PitchYIN pitchEstimator(48000.0);
   std::array<float, 2048> pitchFrame{};
@@ -100,6 +116,9 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
             << " dummy_delay_us=" << workerStats.dummyProcessingDelayUs
             << " dropped_input=" << workerStats.droppedInputBlocks
             << " dropped_output=" << workerStats.droppedOutputBlocks << '\n';
+  std::cout << "DummyBackend processed=" << backendStats.processedChunks
+            << " warmups=" << backendStats.warmupRuns
+            << " avg_ms=" << backendStats.averageProcessMs << '\n';
   std::cout << "PitchYIN frequency_hz=" << lastPitchEstimate.frequencyHz
             << " confidence=" << lastPitchEstimate.confidence
             << " voiced=" << (lastPitchEstimate.voiced ? "true" : "false") << '\n';

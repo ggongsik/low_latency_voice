@@ -47,6 +47,13 @@ boundary.
 `PitchYIN` provides the first C++ F0 estimator. It is benchmarked independently
 and is not yet wired into the realtime worker path. See `docs/f0_estimation.md`.
 
+## Sprint 5 Inference Backend
+
+`AudioWorkerPipeline` can now call an `IVoiceConversionBackend` on the worker
+thread. Sprint 5 uses `DummyVoiceConversionBackend` for pipeline verification
+and keeps `OnnxBackend` as a dependency-free placeholder. See
+`docs/inference_backend.md`.
+
 ## Initial Backend Choice
 
 Inference is intentionally absent from Sprint 0. The first backend will be a

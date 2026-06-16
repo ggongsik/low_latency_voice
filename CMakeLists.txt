@@ -25,6 +25,9 @@ add_library(llvc_core
   src/audio/AudioEngine.cpp
   src/audio/AudioWorkerPipeline.cpp
   src/dsp/PitchYIN.cpp
+  src/inference/DummyVoiceConversionBackend.cpp
+  src/inference/IVoiceConversionBackend.cpp
+  src/inference/OnnxBackend.cpp
   src/profiler/LatencyProfiler.cpp)
 
 target_include_directories(llvc_core PUBLIC src)
@@ -43,6 +46,7 @@ if(LLVC_BUILD_TESTS)
     tests/test_main.cpp
     tests/test_audio_engine.cpp
     tests/test_audio_worker_pipeline.cpp
+    tests/test_inference_backends.cpp
     tests/test_latency_profiler.cpp
     tests/test_pitch_yin.cpp
     tests/test_spsc_ring_buffer.cpp)

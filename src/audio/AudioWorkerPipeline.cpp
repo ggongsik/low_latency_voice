@@ -30,6 +30,7 @@ void AudioWorkerPipeline::resetCounters() noexcept {
   droppedInputBlocks_.store(0, std::memory_order_relaxed);
   droppedOutputBlocks_.store(0, std::memory_order_relaxed);
   unsupportedInputBlocks_.store(0, std::memory_order_relaxed);
+  backendErrorBlocks_.store(0, std::memory_order_relaxed);
   lastWorkerProcessUs_.store(0, std::memory_order_relaxed);
   totalWorkerProcessUs_.store(0, std::memory_order_relaxed);
   averageWorkerProcessUs_.store(0, std::memory_order_relaxed);
@@ -48,8 +49,24 @@ void AudioWorkerPipeline::clearQueuesWhenStopped() noexcept {
   audioThreadOutputScratch_.clear();
 }
 
+void AudioWorkerPipeline::setSampleRate(double sampleRate) noexcept {
+  if (sampleRate > 0.0) {
+    sampleRate_.store(sampleRate, std::memory_order_relaxed);
+  }
+}
+
 void AudioWorkerPipeline::setDummyProcessingDelay(std::chrono::microseconds delay) noexcept {
   dummyProcessingDelayUs_.store(delay.count(), std::memory_order_relaxed);
+}
+
+bool AudioWorkerPipeline::setInferenceBackend(
+    inference::IVoiceConversionBackend* backend) noexcept {
+  if (running()) {
+    return false;
+  }
+
+  backend_ = backend;
+  return true;
 }
 
 bool AudioWorkerPipeline::running() const noexcept {
@@ -74,6 +91,8 @@ AudioWorkerPipelineStats AudioWorkerPipeline::stats() const noexcept {
   snapshot.lastWorkerProcessUs = lastWorkerProcessUs_.load(std::memory_order_relaxed);
   snapshot.averageWorkerProcessUs = averageWorkerProcessUs_.load(std::memory_order_relaxed);
   snapshot.maxWorkerProcessUs = maxWorkerProcessUs_.load(std::memory_order_relaxed);
+  snapshot.backendErrorBlocks = backendErrorBlocks_.load(std::memory_order_relaxed);
+  snapshot.backendAttached = backend_ != nullptr;
   return snapshot;
 }
 
@@ -121,6 +140,7 @@ bool AudioWorkerPipeline::processReplacingFromAudioThread(const float* const* in
 
 void AudioWorkerPipeline::workerLoop() {
   AudioBlock input;
+  AudioBlock output;
   while (running_.load(std::memory_order_acquire)) {
     if (inputQueue_.empty()) {
       common::sleepFor(std::chrono::microseconds(250));
@@ -137,7 +157,15 @@ void AudioWorkerPipeline::workerLoop() {
       common::sleepFor(std::chrono::microseconds(delayUs));
     }
 
-    if (!outputQueue_.tryPush(input)) {
+    if (backend_ != nullptr) {
+      if (!processWithBackend(input, output)) {
+        output = input;
+      }
+    } else {
+      output = input;
+    }
+
+    if (!outputQueue_.tryPush(output)) {
       droppedOutputBlocks_.fetch_add(1, std::memory_order_relaxed);
     }
 
@@ -161,6 +189,27 @@ void AudioWorkerPipeline::workerLoop() {
   }
 }
 
+bool AudioWorkerPipeline::processWithBackend(const AudioBlock& input, AudioBlock& output) {
+  auto* backend = backend_;
+  if (backend == nullptr) {
+    return false;
+  }
+
+  copyBlockToChunk(input, backendInputScratch_);
+  const auto result = backend->process(backendInputScratch_, backendOutputScratch_);
+  if (!result) {
+    backendErrorBlocks_.fetch_add(1, std::memory_order_relaxed);
+    return false;
+  }
+
+  if (!copyChunkToBlock(backendOutputScratch_, input.sequence, output)) {
+    backendErrorBlocks_.fetch_add(1, std::memory_order_relaxed);
+    return false;
+  }
+
+  return true;
+}
+
 bool AudioWorkerPipeline::tryConsumeOutputFromAudioThread(AudioBlock& block) noexcept {
   if (!outputQueue_.tryPop(block)) {
     lateOutputBlocks_.fetch_add(1, std::memory_order_relaxed);
@@ -168,6 +217,41 @@ bool AudioWorkerPipeline::tryConsumeOutputFromAudioThread(AudioBlock& block) noe
   }
 
   consumedOutputBlocks_.fetch_add(1, std::memory_order_relaxed);
+  return true;
+}
+
+void AudioWorkerPipeline::copyBlockToChunk(const AudioBlock& block,
+                                           common::AudioChunk& chunk) const {
+  chunk.sampleRate = sampleRate_.load(std::memory_order_relaxed);
+  chunk.channels = block.channels;
+  chunk.frames = block.frames;
+  chunk.samples.resize(block.channels * block.frames);
+
+  for (std::size_t channel = 0; channel < block.channels; ++channel) {
+    const float* source = block.channelData(channel);
+    auto* destination = chunk.samples.data() + (channel * block.frames);
+    std::copy(source, source + block.frames, destination);
+  }
+}
+
+bool AudioWorkerPipeline::copyChunkToBlock(const common::AudioChunk& chunk,
+                                           std::uint64_t sequence,
+                                           AudioBlock& block) noexcept {
+  if (!AudioBlock::supports(chunk.channels, chunk.frames) ||
+      chunk.samples.size() < chunk.sampleCount()) {
+    return false;
+  }
+
+  block.channels = chunk.channels;
+  block.frames = chunk.frames;
+  block.sequence = sequence;
+
+  for (std::size_t channel = 0; channel < block.channels; ++channel) {
+    const auto* source = chunk.samples.data() + (channel * block.frames);
+    float* destination = block.channelData(channel);
+    std::copy(source, source + block.frames, destination);
+  }
+
   return true;
 }
 
