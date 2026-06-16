@@ -1,17 +1,21 @@
 #include "audio/SpscRingBuffer.h"
 #include "audio/AudioWorkerPipeline.h"
 #include "common/Threading.h"
+#include "dsp/PitchYIN.h"
 #include "profiler/LatencyProfiler.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <string>
 
 namespace llvc::benchmarks {
 
 namespace {
+
+constexpr double kPi = 3.14159265358979323846;
 
 bool waitForWorker(audio::AudioWorkerPipeline& pipeline, std::uint64_t submittedBlocks) {
   for (int attempt = 0; attempt < 200; ++attempt) {
@@ -21,6 +25,15 @@ bool waitForWorker(audio::AudioWorkerPipeline& pipeline, std::uint64_t submitted
     common::sleepFor(std::chrono::microseconds(500));
   }
   return false;
+}
+
+template <std::size_t Size>
+void fillSine(std::array<float, Size>& samples, double sampleRate, double frequencyHz) {
+  for (std::size_t index = 0; index < samples.size(); ++index) {
+    const auto phase =
+        2.0 * kPi * frequencyHz * static_cast<double>(index) / sampleRate;
+    samples[index] = 0.8F * static_cast<float>(std::sin(phase));
+  }
 }
 
 } // namespace
@@ -70,6 +83,15 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
                     static_cast<double>(workerStats.averageWorkerProcessUs) / 1000.0);
   }
 
+  dsp::PitchYIN pitchEstimator(48000.0);
+  std::array<float, 2048> pitchFrame{};
+  fillSine(pitchFrame, 48000.0, 220.0);
+  dsp::F0Estimate lastPitchEstimate;
+  for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+    profiler::ScopedStageTimer timer(profiler, "pitch_yin_2048");
+    lastPitchEstimate = pitchEstimator.estimate(pitchFrame.data(), pitchFrame.size());
+  }
+
   std::cout << profiler.formatReport("Audio Pipeline Benchmark");
   std::cout << "Worker submitted=" << workerStats.submittedBlocks
             << " processed=" << workerStats.workerProcessedBlocks
@@ -78,6 +100,9 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
             << " dummy_delay_us=" << workerStats.dummyProcessingDelayUs
             << " dropped_input=" << workerStats.droppedInputBlocks
             << " dropped_output=" << workerStats.droppedOutputBlocks << '\n';
+  std::cout << "PitchYIN frequency_hz=" << lastPitchEstimate.frequencyHz
+            << " confidence=" << lastPitchEstimate.confidence
+            << " voiced=" << (lastPitchEstimate.voiced ? "true" : "false") << '\n';
 
   if (!csvPath.empty()) {
     const auto result = profiler.writeCsv(csvPath);

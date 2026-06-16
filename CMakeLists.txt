@@ -44,6 +44,7 @@ if(LLVC_BUILD_TESTS)
     tests/test_audio_engine.cpp
     tests/test_audio_worker_pipeline.cpp
     tests/test_latency_profiler.cpp
+    tests/test_pitch_yin.cpp
     tests/test_spsc_ring_buffer.cpp)
 
   target_link_libraries(llvc_tests PRIVATE llvc_core)

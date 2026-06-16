@@ -42,6 +42,11 @@ flags/counters.
 See `docs/audio_callback_flow.md` and `docs/worker_pipeline.md` for the callback
 boundary.
 
+## Sprint 4 F0 Baseline
+
+`PitchYIN` provides the first C++ F0 estimator. It is benchmarked independently
+and is not yet wired into the realtime worker path. See `docs/f0_estimation.md`.
+
 ## Initial Backend Choice
 
 Inference is intentionally absent from Sprint 0. The first backend will be a

@@ -9,12 +9,13 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 2: SPSC worker-thread shadow pipeline.
+Sprint 4: YIN F0 estimation baseline.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
 - JUCE standalone app target with device selector, bypass toggle, and callback counters.
 - Worker-thread shadow pipeline with fixed audio blocks and SPSC queues.
+- C++ YIN F0 estimator baseline with benchmark coverage.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
 

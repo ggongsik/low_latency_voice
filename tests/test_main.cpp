@@ -6,6 +6,7 @@ namespace llvc::tests {
 void testAudioEngine();
 void testAudioWorkerPipeline();
 void testLatencyProfiler();
+void testPitchYIN();
 void testSpscRingBuffer();
 }
 
@@ -15,6 +16,7 @@ int main() {
     llvc::tests::testAudioWorkerPipeline();
     llvc::tests::testSpscRingBuffer();
     llvc::tests::testLatencyProfiler();
+    llvc::tests::testPitchYIN();
   } catch (const std::exception& error) {
     std::cerr << "Test failure: " << error.what() << '\n';
     return 1;
