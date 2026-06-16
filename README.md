@@ -28,6 +28,12 @@ cmake --build --preset default
 ctest --preset default
 ```
 
+The benchmark CLI supports terminal and CSV reports:
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 128 --dummy-delay-us 1000 --csv build\manual\latency_report.csv
+```
+
 To build the JUCE app, install CMake and Ninja, clone JUCE locally, then configure
 with `LLVC_BUILD_JUCE_APP=ON` and `LLVC_JUCE_DIR` pointing at the JUCE checkout.
 

@@ -145,7 +145,10 @@ private:
             juce::String(static_cast<juce::int64>(engine_.xrunCount())) + " | worker q " +
             juce::String(static_cast<int>(workerStats.inputQueueSize)) + "/" +
             juce::String(static_cast<int>(workerStats.outputQueueSize)) + " | late " +
-            juce::String(static_cast<juce::int64>(workerStats.lateOutputBlocks)),
+            juce::String(static_cast<juce::int64>(workerStats.lateOutputBlocks)) +
+            " | worker avg " +
+            juce::String(static_cast<double>(workerStats.averageWorkerProcessUs) / 1000.0, 3) +
+            " ms",
         juce::dontSendNotification);
   }
 

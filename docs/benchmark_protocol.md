@@ -19,3 +19,29 @@
 
 Benchmark CSV files should be generated under `build/` and should not be
 committed.
+
+## Sprint 3 CLI
+
+The benchmark CLI prints a terminal latency report and can optionally export CSV:
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 128 --dummy-delay-us 1000 --csv build\manual\latency_report.csv
+```
+
+Current stages:
+
+- `ring_push_pop`: SPSC queue push/pop loop cost.
+- `worker_shadow_callback`: callback-side worker queue submit/consume cost.
+- `worker_process_observed`: worker-thread dummy processing time observed through
+  atomic stats.
+
+CSV columns:
+
+- `stage`
+- `samples`
+- `last_ms`
+- `average_ms`
+- `moving_average_ms`
+- `p95_ms`
+- `min_ms`
+- `max_ms`

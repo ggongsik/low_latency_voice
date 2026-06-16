@@ -57,3 +57,14 @@ audible latency.
 
 Thread priority is not modified yet. Priority experiments should be measured in
 a later sprint after baseline queue behavior and latency reporting are stable.
+
+## Timing Stats
+
+The worker thread records lightweight atomic timing snapshots:
+
+- last worker processing duration
+- average worker processing duration
+- max worker processing duration
+
+These values are for status reporting and coarse benchmark correlation. Detailed
+stage timing belongs in `LatencyProfiler` and benchmark CSV output.

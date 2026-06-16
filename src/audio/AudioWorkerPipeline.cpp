@@ -30,6 +30,10 @@ void AudioWorkerPipeline::resetCounters() noexcept {
   droppedInputBlocks_.store(0, std::memory_order_relaxed);
   droppedOutputBlocks_.store(0, std::memory_order_relaxed);
   unsupportedInputBlocks_.store(0, std::memory_order_relaxed);
+  lastWorkerProcessUs_.store(0, std::memory_order_relaxed);
+  totalWorkerProcessUs_.store(0, std::memory_order_relaxed);
+  averageWorkerProcessUs_.store(0, std::memory_order_relaxed);
+  maxWorkerProcessUs_.store(0, std::memory_order_relaxed);
   nextSequence_.store(1, std::memory_order_relaxed);
 }
 
@@ -67,6 +71,9 @@ AudioWorkerPipelineStats AudioWorkerPipeline::stats() const noexcept {
   snapshot.inputQueueOverflows = inputQueue_.overflowCount();
   snapshot.outputQueueOverflows = outputQueue_.overflowCount();
   snapshot.dummyProcessingDelayUs = dummyProcessingDelayUs_.load(std::memory_order_relaxed);
+  snapshot.lastWorkerProcessUs = lastWorkerProcessUs_.load(std::memory_order_relaxed);
+  snapshot.averageWorkerProcessUs = averageWorkerProcessUs_.load(std::memory_order_relaxed);
+  snapshot.maxWorkerProcessUs = maxWorkerProcessUs_.load(std::memory_order_relaxed);
   return snapshot;
 }
 
@@ -124,14 +131,32 @@ void AudioWorkerPipeline::workerLoop() {
       continue;
     }
 
+    const auto started = std::chrono::steady_clock::now();
     const auto delayUs = dummyProcessingDelayUs_.load(std::memory_order_relaxed);
     if (delayUs > 0) {
       common::sleepFor(std::chrono::microseconds(delayUs));
     }
 
-    workerProcessedBlocks_.fetch_add(1, std::memory_order_relaxed);
     if (!outputQueue_.tryPush(input)) {
       droppedOutputBlocks_.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    const auto finished = std::chrono::steady_clock::now();
+    const auto elapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(
+                               finished - started)
+                               .count();
+    lastWorkerProcessUs_.store(elapsedUs, std::memory_order_relaxed);
+    const auto totalUs =
+        totalWorkerProcessUs_.fetch_add(elapsedUs, std::memory_order_relaxed) + elapsedUs;
+    const auto processedBlocks =
+        workerProcessedBlocks_.fetch_add(1, std::memory_order_relaxed) + 1;
+    averageWorkerProcessUs_.store(totalUs / static_cast<std::int64_t>(processedBlocks),
+                                  std::memory_order_relaxed);
+
+    auto previousMax = maxWorkerProcessUs_.load(std::memory_order_relaxed);
+    while (elapsedUs > previousMax &&
+           !maxWorkerProcessUs_.compare_exchange_weak(previousMax, elapsedUs,
+                                                      std::memory_order_relaxed)) {
     }
   }
 }

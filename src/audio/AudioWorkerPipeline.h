@@ -25,6 +25,9 @@ struct AudioWorkerPipelineStats {
   std::size_t inputQueueOverflows = 0;
   std::size_t outputQueueOverflows = 0;
   std::int64_t dummyProcessingDelayUs = 0;
+  std::int64_t lastWorkerProcessUs = 0;
+  std::int64_t averageWorkerProcessUs = 0;
+  std::int64_t maxWorkerProcessUs = 0;
 };
 
 class AudioWorkerPipeline {
@@ -81,6 +84,10 @@ private:
   std::atomic<std::uint64_t> droppedInputBlocks_{0};
   std::atomic<std::uint64_t> droppedOutputBlocks_{0};
   std::atomic<std::uint64_t> unsupportedInputBlocks_{0};
+  std::atomic<std::int64_t> lastWorkerProcessUs_{0};
+  std::atomic<std::int64_t> totalWorkerProcessUs_{0};
+  std::atomic<std::int64_t> averageWorkerProcessUs_{0};
+  std::atomic<std::int64_t> maxWorkerProcessUs_{0};
 };
 
 } // namespace llvc::audio

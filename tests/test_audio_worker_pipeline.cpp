@@ -82,6 +82,10 @@ void testAudioWorkerPipeline() {
   stats = pipeline.stats();
   require(stats.consumedOutputBlocks >= 1, "consumed output should be counted");
   require(stats.droppedInputBlocks == 0, "input should not be dropped in nominal path");
+  require(stats.lastWorkerProcessUs >= 0, "last worker process time should be available");
+  require(stats.averageWorkerProcessUs >= 0, "average worker process time should be available");
+  require(stats.maxWorkerProcessUs >= stats.lastWorkerProcessUs,
+          "max worker process time should cover last time");
 }
 
 } // namespace llvc::tests
