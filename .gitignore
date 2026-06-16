@@ -1,0 +1,13 @@
+build/
+out/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+*.csv
+*.wav
+*.onnx
+*.engine
+models/*
+!models/README.md
