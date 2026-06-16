@@ -29,6 +29,15 @@ lock a mutex, wait on I/O, run model inference, or write logs.
 - `src/profiler`: latency measurements and benchmark reporting.
 - `src/common`: shared data structures and result types.
 
+## Sprint 1 Pass-Through
+
+The first realtime app uses JUCE's `AudioAppComponent` to open an audio device
+and routes input samples directly to output samples through `AudioEngine`.
+Device selection and status rendering happen on the UI thread; the callback only
+copies samples, clears samples, and touches atomic flags/counters.
+
+See `docs/audio_callback_flow.md` for the callback boundary.
+
 ## Initial Backend Choice
 
 Inference is intentionally absent from Sprint 0. The first backend will be a

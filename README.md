@@ -9,11 +9,11 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 0: repository and build skeleton.
+Sprint 1: JUCE audio pass-through prototype.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
-- Placeholder JUCE standalone app target.
+- JUCE standalone app target with device selector, bypass toggle, and callback counters.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
 

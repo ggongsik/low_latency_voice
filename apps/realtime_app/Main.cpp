@@ -10,27 +10,64 @@
 
 namespace {
 
-class MainComponent final : public juce::AudioAppComponent {
+class MainComponent final : public juce::AudioAppComponent,
+                            private juce::Button::Listener,
+                            private juce::Timer {
 public:
   MainComponent() {
-    settings_.sampleRate = 48000.0;
-    settings_.blockSize = 128;
-    settings_.inputChannels = 2;
-    settings_.outputChannels = 2;
-    settings_.bypass = true;
-    engine_.configure(settings_);
+    llvc::audio::AudioSettings initialSettings;
+    initialSettings.sampleRate = 48000.0;
+    initialSettings.blockSize = 128;
+    initialSettings.inputChannels = 2;
+    initialSettings.outputChannels = 2;
+    initialSettings.bypass = true;
+    engine_.configure(initialSettings);
 
-    setSize(420, 160);
-    setAudioChannels(static_cast<int>(settings_.inputChannels),
-                     static_cast<int>(settings_.outputChannels));
+    setAudioChannels(static_cast<int>(initialSettings.inputChannels),
+                     static_cast<int>(initialSettings.outputChannels));
+
+    titleLabel_.setText("Low Latency Voice Changer", juce::dontSendNotification);
+    titleLabel_.setFont(juce::Font(18.0F, juce::Font::bold));
+    titleLabel_.setColour(juce::Label::textColourId, juce::Colours::white);
+    addAndMakeVisible(titleLabel_);
+
+    statusLabel_.setColour(juce::Label::textColourId, juce::Colours::white);
+    statusLabel_.setFont(juce::Font(13.0F));
+    statusLabel_.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(statusLabel_);
+
+    bypassButton_.setButtonText("Bypass");
+    bypassButton_.setClickingTogglesState(true);
+    bypassButton_.setToggleState(true, juce::dontSendNotification);
+    bypassButton_.addListener(this);
+    addAndMakeVisible(bypassButton_);
+
+    resetCountersButton_.setButtonText("Reset");
+    resetCountersButton_.addListener(this);
+    addAndMakeVisible(resetCountersButton_);
+
+    deviceSelector_ = std::make_unique<juce::AudioDeviceSelectorComponent>(
+        deviceManager, 1, 2, 1, 2, false, false, true, false);
+    deviceSelector_->setName("Audio Device Settings");
+    addAndMakeVisible(*deviceSelector_);
+
+    setSize(720, 520);
+    updateStatusLabel();
+    startTimerHz(8);
   }
 
-  ~MainComponent() override { shutdownAudio(); }
+  ~MainComponent() override {
+    stopTimer();
+    bypassButton_.removeListener(this);
+    resetCountersButton_.removeListener(this);
+    shutdownAudio();
+  }
 
   void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override {
-    settings_.sampleRate = sampleRate;
-    settings_.blockSize = static_cast<std::size_t>(samplesPerBlockExpected);
-    engine_.configure(settings_);
+    auto currentSettings = engine_.settings();
+    currentSettings.sampleRate = sampleRate;
+    currentSettings.blockSize = static_cast<std::size_t>(samplesPerBlockExpected);
+    engine_.configure(currentSettings);
   }
 
   void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) override {
@@ -57,26 +94,58 @@ public:
   void releaseResources() override {}
 
   void paint(juce::Graphics& graphics) override {
-    graphics.fillAll(juce::Colours::black);
-    graphics.setColour(juce::Colours::white);
-    graphics.setFont(16.0F);
-    graphics.drawFittedText("Low Latency Voice Changer",
-                            getLocalBounds().reduced(24).removeFromTop(32),
-                            juce::Justification::centredLeft, 1);
+    graphics.fillAll(juce::Colour(0xff111315));
+    graphics.setColour(juce::Colour(0xff2a3036));
+    graphics.drawHorizontalLine(72, 24.0F, static_cast<float>(getWidth() - 24));
+  }
 
-    graphics.setFont(13.0F);
-    const auto estimatedBufferMs =
-        1000.0 * static_cast<double>(settings_.blockSize) / settings_.sampleRate;
-    graphics.drawFittedText("Pass-through skeleton | buffer " +
-                                juce::String(estimatedBufferMs, 2) + " ms | blocks " +
-                                juce::String(static_cast<juce::int64>(engine_.processedBlocks())),
-                            getLocalBounds().reduced(24).withTrimmedTop(48),
-                            juce::Justification::centredLeft, 2);
+  void resized() override {
+    auto bounds = getLocalBounds().reduced(24);
+    auto header = bounds.removeFromTop(40);
+    titleLabel_.setBounds(header.removeFromLeft(360));
+    resetCountersButton_.setBounds(header.removeFromRight(88).reduced(0, 4));
+    bypassButton_.setBounds(header.removeFromRight(112).reduced(0, 4));
+
+    statusLabel_.setBounds(bounds.removeFromTop(32));
+    bounds.removeFromTop(16);
+
+    if (deviceSelector_ != nullptr) {
+      deviceSelector_->setBounds(bounds);
+    }
   }
 
 private:
-  llvc::audio::AudioSettings settings_{};
+  void buttonClicked(juce::Button* button) override {
+    if (button == &bypassButton_) {
+      engine_.setBypass(bypassButton_.getToggleState());
+      updateStatusLabel();
+    } else if (button == &resetCountersButton_) {
+      engine_.resetCounters();
+      updateStatusLabel();
+    }
+  }
+
+  void timerCallback() override {
+    updateStatusLabel();
+    repaint();
+  }
+
+  void updateStatusLabel() {
+    statusLabel_.setText(
+        "buffer " + juce::String(engine_.blockSize()) + " @ " +
+            juce::String(engine_.sampleRate(), 0) + " Hz | " +
+            juce::String(engine_.estimatedBlockLatencyMs(), 2) + " ms | blocks " +
+            juce::String(static_cast<juce::int64>(engine_.processedBlocks())) + " | xruns " +
+            juce::String(static_cast<juce::int64>(engine_.xrunCount())),
+        juce::dontSendNotification);
+  }
+
   llvc::audio::AudioEngine engine_{};
+  juce::Label titleLabel_;
+  juce::Label statusLabel_;
+  juce::ToggleButton bypassButton_;
+  juce::TextButton resetCountersButton_;
+  std::unique_ptr<juce::AudioDeviceSelectorComponent> deviceSelector_;
 };
 
 class RealtimeVoiceChangerApplication final : public juce::JUCEApplication {

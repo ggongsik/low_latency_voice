@@ -3,12 +3,14 @@
 #include <string>
 
 namespace llvc::tests {
+void testAudioEngine();
 void testLatencyProfiler();
 void testSpscRingBuffer();
 }
 
 int main() {
   try {
+    llvc::tests::testAudioEngine();
     llvc::tests::testSpscRingBuffer();
     llvc::tests::testLatencyProfiler();
   } catch (const std::exception& error) {

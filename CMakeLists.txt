@@ -37,6 +37,7 @@ if(LLVC_BUILD_TESTS)
 
   add_executable(llvc_tests
     tests/test_main.cpp
+    tests/test_audio_engine.cpp
     tests/test_latency_profiler.cpp
     tests/test_spsc_ring_buffer.cpp)
 
