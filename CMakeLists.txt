@@ -10,10 +10,20 @@ option(LLVC_BUILD_TESTS "Build unit tests" ON)
 option(LLVC_BUILD_BENCHMARKS "Build benchmark command-line tools" ON)
 option(LLVC_BUILD_JUCE_APP "Build the JUCE realtime standalone app" OFF)
 option(LLVC_FETCH_JUCE "Fetch JUCE with CMake FetchContent when JUCE is not local" OFF)
+option(LLVC_ENABLE_ONNXRUNTIME "Enable the ONNX Runtime inference backend" OFF)
 
 set(LLVC_JUCE_DIR
     ""
     CACHE PATH "Path to a local JUCE checkout, if LLVC_BUILD_JUCE_APP is enabled")
+set(LLVC_ONNXRUNTIME_ROOT
+    ""
+    CACHE PATH "Path to an ONNX Runtime installation root")
+set(LLVC_ONNXRUNTIME_INCLUDE_DIR
+    ""
+    CACHE PATH "Path to ONNX Runtime headers")
+set(LLVC_ONNXRUNTIME_LIBRARY
+    ""
+    CACHE FILEPATH "Path to the ONNX Runtime shared/import library")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,6 +42,39 @@ add_library(llvc_core
 
 target_include_directories(llvc_core PUBLIC src)
 target_link_libraries(llvc_core PUBLIC Threads::Threads)
+
+if(LLVC_ENABLE_ONNXRUNTIME)
+  if(NOT LLVC_ONNXRUNTIME_INCLUDE_DIR)
+    find_path(LLVC_ONNXRUNTIME_INCLUDE_DIR
+      NAMES onnxruntime_cxx_api.h
+      PATHS
+        "${LLVC_ONNXRUNTIME_ROOT}/include"
+        "${LLVC_ONNXRUNTIME_ROOT}/include/onnxruntime"
+      NO_DEFAULT_PATH)
+  endif()
+
+  if(NOT LLVC_ONNXRUNTIME_LIBRARY)
+    find_library(LLVC_ONNXRUNTIME_LIBRARY
+      NAMES onnxruntime
+      PATHS
+        "${LLVC_ONNXRUNTIME_ROOT}/lib"
+        "${LLVC_ONNXRUNTIME_ROOT}/lib64"
+      NO_DEFAULT_PATH)
+  endif()
+
+  if(NOT LLVC_ONNXRUNTIME_INCLUDE_DIR OR NOT LLVC_ONNXRUNTIME_LIBRARY)
+    message(FATAL_ERROR
+      "LLVC_ENABLE_ONNXRUNTIME is ON, but ONNX Runtime was not found. "
+      "Set LLVC_ONNXRUNTIME_ROOT or LLVC_ONNXRUNTIME_INCLUDE_DIR and "
+      "LLVC_ONNXRUNTIME_LIBRARY.")
+  endif()
+
+  target_compile_definitions(llvc_core PUBLIC LLVC_ENABLE_ONNXRUNTIME=1)
+  target_include_directories(llvc_core PRIVATE "${LLVC_ONNXRUNTIME_INCLUDE_DIR}")
+  target_link_libraries(llvc_core PRIVATE "${LLVC_ONNXRUNTIME_LIBRARY}")
+else()
+  target_compile_definitions(llvc_core PUBLIC LLVC_ENABLE_ONNXRUNTIME=0)
+endif()
 
 if(MSVC)
   target_compile_options(llvc_core PRIVATE /W4 /permissive-)

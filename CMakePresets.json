@@ -25,6 +25,20 @@
         "LLVC_BUILD_JUCE_APP": "ON",
         "LLVC_JUCE_DIR": ""
       }
+    },
+    {
+      "name": "onnx-local",
+      "displayName": "Core build with local ONNX Runtime",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/onnx-local",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LLVC_BUILD_TESTS": "ON",
+        "LLVC_BUILD_BENCHMARKS": "ON",
+        "LLVC_BUILD_JUCE_APP": "OFF",
+        "LLVC_ENABLE_ONNXRUNTIME": "ON",
+        "LLVC_ONNXRUNTIME_ROOT": ""
+      }
     }
   ],
   "buildPresets": [
@@ -35,6 +49,10 @@
     {
       "name": "juce-local",
       "configurePreset": "juce-local"
+    },
+    {
+      "name": "onnx-local",
+      "configurePreset": "onnx-local"
     }
   ],
   "testPresets": [

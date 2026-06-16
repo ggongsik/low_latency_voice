@@ -50,9 +50,9 @@ and is not yet wired into the realtime worker path. See `docs/f0_estimation.md`.
 ## Sprint 5 Inference Backend
 
 `AudioWorkerPipeline` can now call an `IVoiceConversionBackend` on the worker
-thread. Sprint 5 uses `DummyVoiceConversionBackend` for pipeline verification
-and keeps `OnnxBackend` as a dependency-free placeholder. See
-`docs/inference_backend.md`.
+thread. Sprint 5 uses `DummyVoiceConversionBackend` for pipeline verification.
+Sprint 6 adds optional ONNX Runtime session loading behind
+`LLVC_ENABLE_ONNXRUNTIME`. See `docs/inference_backend.md`.
 
 ## Initial Backend Choice
 

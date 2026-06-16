@@ -17,6 +17,7 @@ Track candidates here once the ONNX dummy backend is working.
 ## Sprint 5 Backend Status
 
 The current inference path uses `DummyVoiceConversionBackend` to verify load,
-warm-up, process timing, worker integration, and benchmark reporting. The
-`OnnxBackend` class exists as a placeholder and intentionally reports that ONNX
-Runtime is not enabled.
+warm-up, process timing, worker integration, and benchmark reporting.
+`OnnxBackend` can now be compiled with ONNX Runtime and can create a session, but
+tensor input/output conversion is still pending until a target model format is
+chosen.

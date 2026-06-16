@@ -9,7 +9,7 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 5: Dummy inference backend pipeline.
+Sprint 6: Optional ONNX Runtime backend wiring.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
@@ -17,6 +17,7 @@ Sprint 5: Dummy inference backend pipeline.
 - Worker-thread shadow pipeline with fixed audio blocks and SPSC queues.
 - C++ YIN F0 estimator baseline with benchmark coverage.
 - Dummy voice conversion backend with worker-thread integration and benchmark stats.
+- Optional ONNX Runtime build wiring for future real model loading.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
 
@@ -44,6 +45,16 @@ cmake -S . -B build/juce-local -G Ninja `
   -DLLVC_BUILD_JUCE_APP=ON `
   -DLLVC_JUCE_DIR=C:\path\to\JUCE
 cmake --build build/juce-local
+```
+
+To enable ONNX Runtime session loading, install ONNX Runtime locally and point
+`LLVC_ONNXRUNTIME_ROOT` at that installation:
+
+```powershell
+cmake -S . -B build/onnx-local -G Ninja `
+  -DLLVC_ENABLE_ONNXRUNTIME=ON `
+  -DLLVC_ONNXRUNTIME_ROOT=C:\path\to\onnxruntime
+cmake --build build/onnx-local
 ```
 
 ## Roadmap
