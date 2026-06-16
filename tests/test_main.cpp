@@ -4,6 +4,7 @@
 
 namespace llvc::tests {
 void testAudioEngine();
+void testAudioWorkerPipeline();
 void testLatencyProfiler();
 void testSpscRingBuffer();
 }
@@ -11,6 +12,7 @@ void testSpscRingBuffer();
 int main() {
   try {
     llvc::tests::testAudioEngine();
+    llvc::tests::testAudioWorkerPipeline();
     llvc::tests::testSpscRingBuffer();
     llvc::tests::testLatencyProfiler();
   } catch (const std::exception& error) {

@@ -9,11 +9,12 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 1: JUCE audio pass-through prototype.
+Sprint 2: SPSC worker-thread shadow pipeline.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
 - JUCE standalone app target with device selector, bypass toggle, and callback counters.
+- Worker-thread shadow pipeline with fixed audio blocks and SPSC queues.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
 

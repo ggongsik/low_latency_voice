@@ -19,12 +19,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Threads REQUIRED)
+
 add_library(llvc_core
   src/audio/AudioEngine.cpp
+  src/audio/AudioWorkerPipeline.cpp
   src/dsp/PitchYIN.cpp
   src/profiler/LatencyProfiler.cpp)
 
 target_include_directories(llvc_core PUBLIC src)
+target_link_libraries(llvc_core PUBLIC Threads::Threads)
 
 if(MSVC)
   target_compile_options(llvc_core PRIVATE /W4 /permissive-)
@@ -38,6 +42,7 @@ if(LLVC_BUILD_TESTS)
   add_executable(llvc_tests
     tests/test_main.cpp
     tests/test_audio_engine.cpp
+    tests/test_audio_worker_pipeline.cpp
     tests/test_latency_profiler.cpp
     tests/test_spsc_ring_buffer.cpp)
 

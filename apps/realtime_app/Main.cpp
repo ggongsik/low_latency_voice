@@ -1,4 +1,5 @@
 #include "audio/AudioEngine.h"
+#include "audio/AudioWorkerPipeline.h"
 
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -22,6 +23,7 @@ public:
     initialSettings.outputChannels = 2;
     initialSettings.bypass = true;
     engine_.configure(initialSettings);
+    workerPipeline_.start();
 
     setAudioChannels(static_cast<int>(initialSettings.inputChannels),
                      static_cast<int>(initialSettings.outputChannels));
@@ -61,6 +63,7 @@ public:
     bypassButton_.removeListener(this);
     resetCountersButton_.removeListener(this);
     shutdownAudio();
+    workerPipeline_.stop();
   }
 
   void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override {
@@ -88,6 +91,7 @@ public:
       outputs[channel] = buffer->getWritePointer(static_cast<int>(channel), bufferToFill.startSample);
     }
 
+    (void)workerPipeline_.processShadowFromAudioThread(inputs.data(), boundedChannels, frames);
     engine_.processPassThrough(inputs.data(), outputs.data(), boundedChannels, boundedChannels, frames);
   }
 
@@ -121,6 +125,7 @@ private:
       updateStatusLabel();
     } else if (button == &resetCountersButton_) {
       engine_.resetCounters();
+      workerPipeline_.resetCounters();
       updateStatusLabel();
     }
   }
@@ -131,16 +136,21 @@ private:
   }
 
   void updateStatusLabel() {
+    const auto workerStats = workerPipeline_.stats();
     statusLabel_.setText(
         "buffer " + juce::String(engine_.blockSize()) + " @ " +
             juce::String(engine_.sampleRate(), 0) + " Hz | " +
             juce::String(engine_.estimatedBlockLatencyMs(), 2) + " ms | blocks " +
             juce::String(static_cast<juce::int64>(engine_.processedBlocks())) + " | xruns " +
-            juce::String(static_cast<juce::int64>(engine_.xrunCount())),
+            juce::String(static_cast<juce::int64>(engine_.xrunCount())) + " | worker q " +
+            juce::String(static_cast<int>(workerStats.inputQueueSize)) + "/" +
+            juce::String(static_cast<int>(workerStats.outputQueueSize)) + " | late " +
+            juce::String(static_cast<juce::int64>(workerStats.lateOutputBlocks)),
         juce::dontSendNotification);
   }
 
   llvc::audio::AudioEngine engine_{};
+  llvc::audio::AudioWorkerPipeline workerPipeline_{};
   juce::Label titleLabel_;
   juce::Label statusLabel_;
   juce::ToggleButton bypassButton_;

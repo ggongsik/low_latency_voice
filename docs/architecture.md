@@ -33,10 +33,14 @@ lock a mutex, wait on I/O, run model inference, or write logs.
 
 The first realtime app uses JUCE's `AudioAppComponent` to open an audio device
 and routes input samples directly to output samples through `AudioEngine`.
+It also mirrors input blocks into `AudioWorkerPipeline` in shadow mode so the
+worker queue can be measured without changing audible pass-through behavior.
 Device selection and status rendering happen on the UI thread; the callback only
-copies samples, clears samples, and touches atomic flags/counters.
+copies samples, clears samples, pushes/pops SPSC queues, and touches atomic
+flags/counters.
 
-See `docs/audio_callback_flow.md` for the callback boundary.
+See `docs/audio_callback_flow.md` and `docs/worker_pipeline.md` for the callback
+boundary.
 
 ## Initial Backend Choice
 

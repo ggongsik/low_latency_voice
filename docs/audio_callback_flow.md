@@ -6,13 +6,15 @@
 JUCE device callback
   -> MainComponent::getNextAudioBlock
   -> collect preallocated channel pointers
+  -> AudioWorkerPipeline::processShadowFromAudioThread
+  -> submit fixed block to worker queue and consume completed output for stats
   -> AudioEngine::processPassThrough
   -> copy input samples to output samples
 ```
 
-The Sprint 1 path is intentionally direct. It proves the device setup, callback
-shape, bypass flag, and basic counters before any worker thread or AI inference
-is introduced.
+The audible path is intentionally direct. It proves the device setup, callback
+shape, bypass flag, basic counters, and worker queue plumbing before any AI
+inference is introduced.
 
 ## Realtime Safety Rules
 
@@ -36,6 +38,8 @@ Allowed operations in the callback:
 - `processedBlocks`: increments after each non-null output callback.
 - `xrunCount`: increments when the callback receives missing output buffers or
   missing channel pointers.
+- `lateOutputBlocks`: increments when the worker output queue has no processed
+  block ready for the current callback.
 - `estimatedBlockLatencyMs`: reports one hardware block duration as
   `1000 * blockSize / sampleRate`.
 
