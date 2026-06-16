@@ -72,8 +72,8 @@ common::Result OnnxBackend::process(const common::AudioChunk& input,
   }
 
   return common::Result::error(
-      "ONNX Runtime session loading is enabled, but tensor input/output conversion "
-      "is not implemented yet");
+      "ONNX Runtime session loading is enabled, and AudioTensorAdapter is available, "
+      "but OnnxBackend::process has not wired model input/output names yet");
 #else
   (void)input;
   (void)output;

@@ -54,6 +54,12 @@ thread. Sprint 5 uses `DummyVoiceConversionBackend` for pipeline verification.
 Sprint 6 adds optional ONNX Runtime session loading behind
 `LLVC_ENABLE_ONNXRUNTIME`. See `docs/inference_backend.md`.
 
+## Sprint 7 Tensor Adapter
+
+`AudioTensorAdapter` defines the current fixed tensor boundary between audio
+chunks and ONNX-style backends: `float32[1, channels, frames]`. This keeps model
+I/O conversion testable before real model selection.
+
 ## Initial Backend Choice
 
 Inference is intentionally absent from Sprint 0. The first backend will be a

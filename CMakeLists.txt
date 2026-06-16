@@ -35,6 +35,7 @@ add_library(llvc_core
   src/audio/AudioEngine.cpp
   src/audio/AudioWorkerPipeline.cpp
   src/dsp/PitchYIN.cpp
+  src/inference/AudioTensorAdapter.cpp
   src/inference/DummyVoiceConversionBackend.cpp
   src/inference/IVoiceConversionBackend.cpp
   src/inference/OnnxBackend.cpp
@@ -88,6 +89,7 @@ if(LLVC_BUILD_TESTS)
   add_executable(llvc_tests
     tests/test_main.cpp
     tests/test_audio_engine.cpp
+    tests/test_audio_tensor_adapter.cpp
     tests/test_audio_worker_pipeline.cpp
     tests/test_inference_backends.cpp
     tests/test_latency_profiler.cpp

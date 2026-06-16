@@ -21,3 +21,15 @@ warm-up, process timing, worker integration, and benchmark reporting.
 `OnnxBackend` can now be compiled with ONNX Runtime and can create a session, but
 tensor input/output conversion is still pending until a target model format is
 chosen.
+
+## Tensor Contract
+
+The current backend-facing audio tensor contract is:
+
+```text
+float32[1, channels, frames]
+```
+
+`AudioTensorAdapter` validates and copies channel-major `AudioChunk` data into
+that shape. Real VC model integration should either match this contract or
+document a different model-specific adapter.

@@ -25,6 +25,19 @@ channel-major `AudioChunk` data and calls the backend outside the callback.
 If backend processing fails, the worker falls back to the dry input block and
 increments `backendErrorBlocks`.
 
+## Fixed Tensor Adapter
+
+`AudioTensorAdapter` converts between `AudioChunk` and a fixed ONNX-style
+`[1, channels, frames]` float tensor. The adapter is independent of ONNX Runtime
+so the shape contract can be tested before a real model is connected.
+
+Current assumptions:
+
+- batch size is always 1
+- channel-major sample order
+- fixed channel count and frame count per backend configuration
+- float32 input/output tensors
+
 ## Warm-Up
 
 `IVoiceConversionBackend::warmUp` runs one or more process calls before benchmark
@@ -55,7 +68,7 @@ cmake --build build/onnx-local
 
 Actual ONNX inference should add:
 
-- Fixed-shape input/output tensor conversion.
+- Wiring `AudioTensorAdapter` into `OnnxBackend::process`.
 - Execution provider selection.
 - Warm-up inference before measurement.
 - Dedicated ONNX benchmark CSV rows.

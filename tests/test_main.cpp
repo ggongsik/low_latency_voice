@@ -4,6 +4,7 @@
 
 namespace llvc::tests {
 void testAudioEngine();
+void testAudioTensorAdapter();
 void testAudioWorkerPipeline();
 void testInferenceBackends();
 void testLatencyProfiler();
@@ -14,6 +15,7 @@ void testSpscRingBuffer();
 int main() {
   try {
     llvc::tests::testAudioEngine();
+    llvc::tests::testAudioTensorAdapter();
     llvc::tests::testAudioWorkerPipeline();
     llvc::tests::testInferenceBackends();
     llvc::tests::testSpscRingBuffer();
