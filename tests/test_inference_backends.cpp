@@ -62,6 +62,10 @@ void testInferenceBackends() {
   inference::OnnxBackend onnx;
   result = onnx.loadModel("dummy.onnx");
   require(!result, "ONNX placeholder should fail while runtime is disabled");
+  const auto onnxStats = onnx.stats();
+  require(!onnxStats.modelLoaded, "disabled ONNX backend should not report a loaded model");
+  require(onnxStats.processedChunks == 0,
+          "disabled ONNX backend should not report processed chunks");
 }
 
 } // namespace llvc::tests

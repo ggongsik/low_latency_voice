@@ -55,6 +55,14 @@ directory with `onnxruntime_cxx_api.h` and a `lib` directory containing the ONNX
 Runtime library. On Windows, make sure the ONNX Runtime `.dll` is available next
 to the executable or on `PATH` before running.
 
+Current backend contract:
+
+- Exactly one model input and one model output.
+- Both tensors must be `float32`.
+- Both tensors must use static shape `[1, channels, frames]`.
+- Dynamic channel/frame dimensions and model-specific feature tensors need a
+  future adapter before they can run in the realtime worker path.
+
 ## Optional Later Work
 
 | Requirement | Purpose | Notes |

@@ -1,10 +1,11 @@
 # Inference Backend
 
-## Sprint 6 Scope
+## Sprint 8 Scope
 
 Sprint 5 introduced the replaceable inference backend path without requiring
-ONNX Runtime to be installed. Sprint 6 adds build wiring for optional ONNX
-Runtime session loading.
+ONNX Runtime to be installed. Sprint 6 added optional ONNX Runtime session
+loading. Sprint 8 wires the fixed audio tensor adapter into
+`OnnxBackend::process` for a first real ONNX Runtime execution path.
 
 Current backends:
 
@@ -13,7 +14,9 @@ Current backends:
   timing, tensor-like input/output conversion, and worker-thread integration.
 - `OnnxBackend`: dependency-free placeholder by default. When
   `LLVC_ENABLE_ONNXRUNTIME=ON`, it creates an ONNX Runtime session in
-  `loadModel`. Tensor input/output conversion is intentionally still pending.
+  `loadModel`, inspects one input and one output name, validates fixed
+  `float32[1, channels, frames]` tensors, and calls `Ort::Session::Run` in
+  `process`.
 
 ## Worker Integration
 
@@ -37,6 +40,7 @@ Current assumptions:
 - channel-major sample order
 - fixed channel count and frame count per backend configuration
 - float32 input/output tensors
+- exactly one ONNX input tensor and one ONNX output tensor
 
 ## Warm-Up
 
@@ -66,9 +70,9 @@ cmake --build build/onnx-local
 
 ## Next ONNX Work
 
-Actual ONNX inference should add:
+The next ONNX steps should add:
 
-- Wiring `AudioTensorAdapter` into `OnnxBackend::process`.
 - Execution provider selection.
 - Warm-up inference before measurement.
 - Dedicated ONNX benchmark CSV rows.
+- Model-specific adapters for feature tensors that are not raw audio chunks.

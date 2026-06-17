@@ -9,7 +9,7 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 7: Requirements and fixed tensor conversion.
+Sprint 8: ONNX Runtime process path.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
@@ -17,7 +17,8 @@ Sprint 7: Requirements and fixed tensor conversion.
 - Worker-thread shadow pipeline with fixed audio blocks and SPSC queues.
 - C++ YIN F0 estimator baseline with benchmark coverage.
 - Dummy voice conversion backend with worker-thread integration and benchmark stats.
-- Optional ONNX Runtime build wiring for future real model loading.
+- Optional ONNX Runtime backend with session load, fixed IO inspection, and
+  single-input/single-output inference.
 - Fixed `[1, channels, frames]` audio tensor adapter for ONNX-style backends.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
@@ -76,6 +77,10 @@ cmake -S . -B build/onnx-local -G Ninja `
   -DLLVC_ONNXRUNTIME_ROOT=C:\path\to\onnxruntime
 cmake --build build/onnx-local
 ```
+
+The current ONNX backend expects one float32 input tensor and one float32 output
+tensor, both with static shape `[1, channels, frames]`. It is intended as the
+CPU baseline before execution-provider-specific tuning.
 
 ## Roadmap
 
