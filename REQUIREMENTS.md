@@ -63,6 +63,21 @@ Current backend contract:
 - Dynamic channel/frame dimensions and model-specific feature tensors need a
   future adapter before they can run in the realtime worker path.
 
+Backend smoke benchmark:
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model C:\path\to\model.onnx `
+  --onnx-channels 1 `
+  --onnx-frames 128 `
+  --onnx-warmup 2
+```
+
+Use `--onnx-channels` and `--onnx-frames` to match the model's fixed
+`[1, channels, frames]` input and output tensors. If the project is built
+without `LLVC_ENABLE_ONNXRUNTIME=ON`, the CLI will report that ONNX Runtime is
+not enabled and continue running the default benchmark stages.
+
 ## Optional Later Work
 
 | Requirement | Purpose | Notes |

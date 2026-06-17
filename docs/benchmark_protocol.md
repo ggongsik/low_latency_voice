@@ -28,6 +28,16 @@ The benchmark CLI prints a terminal latency report and can optionally export CSV
 build\manual\llvc_benchmark_cli.exe --iterations 128 --dummy-delay-us 1000 --csv build\manual\latency_report.csv
 ```
 
+Optional ONNX backend smoke benchmark:
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model C:\path\to\model.onnx `
+  --onnx-channels 1 `
+  --onnx-frames 128 `
+  --onnx-warmup 2
+```
+
 Current stages:
 
 - `ring_push_pop`: SPSC queue push/pop loop cost.
@@ -36,6 +46,8 @@ Current stages:
   atomic stats.
 - `dummy_backend_process`: average process time reported by
   `DummyVoiceConversionBackend`.
+- `onnx_backend_process`: average process time reported by `OnnxBackend` when
+  `--onnx-model` is provided and ONNX Runtime is enabled.
 - `pitch_yin_2048`: C++ YIN F0 estimation on a 2048-sample frame.
 
 CSV columns:

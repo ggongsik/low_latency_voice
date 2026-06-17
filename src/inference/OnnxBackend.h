@@ -15,6 +15,7 @@ public:
   OnnxBackend& operator=(const OnnxBackend&) = delete;
 
   common::Result loadModel(const std::string& path) override;
+  common::Result warmUp(const common::AudioChunk& input, std::size_t iterations) override;
   common::Result process(const common::AudioChunk& input,
                          common::AudioChunk& output) override;
   BackendStats stats() const override;

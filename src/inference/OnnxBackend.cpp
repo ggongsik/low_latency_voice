@@ -179,6 +179,16 @@ common::Result OnnxBackend::loadModel(const std::string& path) {
 #endif
 }
 
+common::Result OnnxBackend::warmUp(const common::AudioChunk& input,
+                                   std::size_t iterations) {
+  const auto runCount = iterations == 0 ? std::size_t{1} : iterations;
+  const auto result = IVoiceConversionBackend::warmUp(input, runCount);
+  if (result) {
+    impl_->stats.warmupRuns += runCount;
+  }
+  return result;
+}
+
 common::Result OnnxBackend::process(const common::AudioChunk& input,
                                     common::AudioChunk& output) {
 #if LLVC_ENABLE_ONNXRUNTIME

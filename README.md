@@ -9,7 +9,7 @@ real-time callback safety, and swappable inference backends.
 
 ## Current Milestone
 
-Sprint 8: ONNX Runtime process path.
+Sprint 9: ONNX Runtime smoke benchmarking.
 
 - C++17 CMake project.
 - Core modules for audio, DSP, inference, profiling, and common types.
@@ -19,6 +19,7 @@ Sprint 8: ONNX Runtime process path.
 - Dummy voice conversion backend with worker-thread integration and benchmark stats.
 - Optional ONNX Runtime backend with session load, fixed IO inspection, and
   single-input/single-output inference.
+- Benchmark CLI support for backend-only ONNX smoke latency runs.
 - Fixed `[1, channels, frames]` audio tensor adapter for ONNX-style backends.
 - Unit-test and benchmark CLI targets.
 - Real-time audio coding rules in `AGENTS.md`.
@@ -52,6 +53,17 @@ The benchmark CLI supports terminal and CSV reports:
 
 ```powershell
 build\manual\llvc_benchmark_cli.exe --iterations 128 --dummy-delay-us 1000 --csv build\manual\latency_report.csv
+```
+
+After enabling ONNX Runtime, the same CLI can run a backend-only ONNX smoke
+benchmark. The shape options must match the model input/output contract.
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model C:\path\to\model.onnx `
+  --onnx-channels 1 `
+  --onnx-frames 128 `
+  --onnx-warmup 2
 ```
 
 To build the JUCE app, install CMake and Ninja, clone JUCE locally from

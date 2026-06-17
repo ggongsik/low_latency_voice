@@ -56,6 +56,17 @@ The benchmark CLI records `dummy_backend_process` from backend stats and keeps
 build\manual\llvc_benchmark_cli.exe --iterations 32 --dummy-delay-us 1000 --csv build\manual\latency_report.csv
 ```
 
+With ONNX Runtime enabled, pass `--onnx-model` to run a backend-only ONNX smoke
+benchmark and emit `onnx_backend_process`.
+
+```powershell
+build\manual\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model C:\path\to\model.onnx `
+  --onnx-channels 1 `
+  --onnx-frames 128 `
+  --onnx-warmup 2
+```
+
 ## ONNX Runtime Build
 
 Configure with either `LLVC_ONNXRUNTIME_ROOT`, or both
@@ -73,6 +84,6 @@ cmake --build build/onnx-local
 The next ONNX steps should add:
 
 - Execution provider selection.
-- Warm-up inference before measurement.
-- Dedicated ONNX benchmark CSV rows.
 - Model-specific adapters for feature tensors that are not raw audio chunks.
+- Local ONNX Runtime smoke data once the runtime package and a fixed-shape test
+  model are installed.

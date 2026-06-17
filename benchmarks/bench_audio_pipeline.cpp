@@ -1,8 +1,10 @@
 #include "audio/SpscRingBuffer.h"
 #include "audio/AudioWorkerPipeline.h"
+#include "common/AudioChunk.h"
 #include "common/Threading.h"
 #include "dsp/PitchYIN.h"
 #include "inference/DummyVoiceConversionBackend.h"
+#include "inference/OnnxBackend.h"
 #include "profiler/LatencyProfiler.h"
 
 #include <algorithm>
@@ -37,10 +39,34 @@ void fillSine(std::array<float, Size>& samples, double sampleRate, double freque
   }
 }
 
+common::AudioChunk makeSineChunk(std::size_t channels, std::size_t frames,
+                                 double sampleRate, double frequencyHz) {
+  common::AudioChunk chunk;
+  chunk.sampleRate = sampleRate;
+  chunk.channels = channels;
+  chunk.frames = frames;
+  chunk.samples.resize(chunk.sampleCount());
+
+  for (std::size_t frame = 0; frame < frames; ++frame) {
+    const auto phase =
+        2.0 * kPi * frequencyHz * static_cast<double>(frame) / sampleRate;
+    const auto sample = 0.8F * static_cast<float>(std::sin(phase));
+    for (std::size_t channel = 0; channel < channels; ++channel) {
+      chunk.samples[channel * frames + frame] = sample;
+    }
+  }
+
+  return chunk;
+}
+
 } // namespace
 
 void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
-                               const std::string& csvPath) {
+                               const std::string& csvPath,
+                               const std::string& onnxModelPath,
+                               std::size_t onnxChannels,
+                               std::size_t onnxFrames,
+                               std::size_t onnxWarmupRuns) {
   audio::SpscRingBuffer<float, 128> buffer;
   audio::AudioWorkerPipeline workerPipeline;
   profiler::LatencyProfiler profiler(64);
@@ -99,6 +125,41 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
     profiler.record("dummy_backend_process", backendStats.averageProcessMs);
   }
 
+  inference::BackendStats onnxStats;
+  std::string onnxStatus;
+  if (!onnxModelPath.empty()) {
+    inference::OnnxBackend onnxBackend;
+    const auto onnxInput = makeSineChunk(onnxChannels, onnxFrames, 48000.0, 220.0);
+    auto result = onnxBackend.loadModel(onnxModelPath);
+    if (!result) {
+      onnxStatus = std::string("load_failed: ") + result.message();
+    } else {
+      result = onnxBackend.warmUp(onnxInput, onnxWarmupRuns);
+      if (!result) {
+        onnxStatus = std::string("warmup_failed: ") + result.message();
+      } else {
+        common::AudioChunk onnxOutput;
+        for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+          result = onnxBackend.process(onnxInput, onnxOutput);
+          if (!result) {
+            break;
+          }
+        }
+
+        if (result) {
+          onnxStatus = "ok";
+        } else {
+          onnxStatus = std::string("process_failed: ") + result.message();
+        }
+      }
+    }
+
+    onnxStats = onnxBackend.stats();
+    if (onnxStats.processedChunks > 0) {
+      profiler.record("onnx_backend_process", onnxStats.averageProcessMs);
+    }
+  }
+
   dsp::PitchYIN pitchEstimator(48000.0);
   std::array<float, 2048> pitchFrame{};
   fillSine(pitchFrame, 48000.0, 220.0);
@@ -119,6 +180,13 @@ void runAudioPipelineBenchmark(std::size_t iterations, long dummyDelayUs,
   std::cout << "DummyBackend processed=" << backendStats.processedChunks
             << " warmups=" << backendStats.warmupRuns
             << " avg_ms=" << backendStats.averageProcessMs << '\n';
+  if (!onnxModelPath.empty()) {
+    std::cout << "ONNXBackend status=" << onnxStatus
+              << " processed=" << onnxStats.processedChunks
+              << " warmups=" << onnxStats.warmupRuns
+              << " avg_ms=" << onnxStats.averageProcessMs
+              << " shape=[1," << onnxChannels << ',' << onnxFrames << "]\n";
+  }
   std::cout << "PitchYIN frequency_hz=" << lastPitchEstimate.frequencyHz
             << " confidence=" << lastPitchEstimate.confidence
             << " voiced=" << (lastPitchEstimate.voiced ? "true" : "false") << '\n';

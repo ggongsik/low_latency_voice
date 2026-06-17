@@ -62,8 +62,12 @@ void testInferenceBackends() {
   inference::OnnxBackend onnx;
   result = onnx.loadModel("dummy.onnx");
   require(!result, "ONNX placeholder should fail while runtime is disabled");
+  result = onnx.warmUp(input, 1);
+  require(!result, "disabled ONNX backend warm-up should fail");
   const auto onnxStats = onnx.stats();
   require(!onnxStats.modelLoaded, "disabled ONNX backend should not report a loaded model");
+  require(onnxStats.warmupRuns == 0,
+          "disabled ONNX backend should not report warm-up runs");
   require(onnxStats.processedChunks == 0,
           "disabled ONNX backend should not report processed chunks");
 }
