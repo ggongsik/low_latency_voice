@@ -57,11 +57,15 @@ build\manual\llvc_benchmark_cli.exe --iterations 32 --dummy-delay-us 1000 --csv 
 ```
 
 With ONNX Runtime enabled, pass `--onnx-model` to run a backend-only ONNX smoke
-benchmark and emit `onnx_backend_process`.
+benchmark and emit `onnx_backend_process`. The identity model below is only a
+pipeline smoke test; it is not a voice conversion model.
 
 ```powershell
-build\manual\llvc_benchmark_cli.exe --iterations 32 `
-  --onnx-model C:\path\to\model.onnx `
+py -m pip install -r tools\requirements-model.txt
+py tools\create_identity_onnx.py --output models\identity_audio_1x1x128.onnx `
+  --channels 1 --frames 128
+build\onnx-local\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model models\identity_audio_1x1x128.onnx `
   --onnx-channels 1 `
   --onnx-frames 128 `
   --onnx-warmup 2
@@ -73,10 +77,9 @@ Configure with either `LLVC_ONNXRUNTIME_ROOT`, or both
 `LLVC_ONNXRUNTIME_INCLUDE_DIR` and `LLVC_ONNXRUNTIME_LIBRARY`.
 
 ```powershell
-cmake -S . -B build/onnx-local -G Ninja `
-  -DLLVC_ENABLE_ONNXRUNTIME=ON `
-  -DLLVC_ONNXRUNTIME_ROOT=C:\path\to\onnxruntime
-cmake --build build/onnx-local
+powershell -ExecutionPolicy Bypass -File tools\install_onnxruntime_windows.ps1
+cmake --preset onnx-local
+cmake --build --preset onnx-local
 ```
 
 ## Next ONNX Work

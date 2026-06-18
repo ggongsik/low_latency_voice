@@ -1,5 +1,6 @@
 build/
 out/
+third_party/
 .vs/
 .vscode/
 *.user
@@ -9,5 +10,7 @@ out/
 *.wav
 *.onnx
 *.engine
+__pycache__/
+*.pyc
 models/*
 !models/README.md

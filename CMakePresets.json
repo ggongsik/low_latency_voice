@@ -37,7 +37,7 @@
         "LLVC_BUILD_BENCHMARKS": "ON",
         "LLVC_BUILD_JUCE_APP": "OFF",
         "LLVC_ENABLE_ONNXRUNTIME": "ON",
-        "LLVC_ONNXRUNTIME_ROOT": ""
+        "LLVC_ONNXRUNTIME_ROOT": "${sourceDir}/third_party/onnxruntime"
       }
     }
   ],

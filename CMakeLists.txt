@@ -24,6 +24,9 @@ set(LLVC_ONNXRUNTIME_INCLUDE_DIR
 set(LLVC_ONNXRUNTIME_LIBRARY
     ""
     CACHE FILEPATH "Path to the ONNX Runtime shared/import library")
+set(LLVC_ONNXRUNTIME_DLL
+    ""
+    CACHE FILEPATH "Path to onnxruntime.dll on Windows")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -63,6 +66,15 @@ if(LLVC_ENABLE_ONNXRUNTIME)
       NO_DEFAULT_PATH)
   endif()
 
+  if(WIN32 AND NOT LLVC_ONNXRUNTIME_DLL)
+    find_file(LLVC_ONNXRUNTIME_DLL
+      NAMES onnxruntime.dll
+      PATHS
+        "${LLVC_ONNXRUNTIME_ROOT}/bin"
+        "${LLVC_ONNXRUNTIME_ROOT}/lib"
+      NO_DEFAULT_PATH)
+  endif()
+
   if(NOT LLVC_ONNXRUNTIME_INCLUDE_DIR OR NOT LLVC_ONNXRUNTIME_LIBRARY)
     message(FATAL_ERROR
       "LLVC_ENABLE_ONNXRUNTIME is ON, but ONNX Runtime was not found. "
@@ -73,9 +85,27 @@ if(LLVC_ENABLE_ONNXRUNTIME)
   target_compile_definitions(llvc_core PUBLIC LLVC_ENABLE_ONNXRUNTIME=1)
   target_include_directories(llvc_core PRIVATE "${LLVC_ONNXRUNTIME_INCLUDE_DIR}")
   target_link_libraries(llvc_core PRIVATE "${LLVC_ONNXRUNTIME_LIBRARY}")
+
+  if(WIN32 AND LLVC_ONNXRUNTIME_DLL)
+    message(STATUS "ONNX Runtime DLL: ${LLVC_ONNXRUNTIME_DLL}")
+  elseif(WIN32)
+    message(WARNING
+      "onnxruntime.dll was not found under LLVC_ONNXRUNTIME_ROOT. "
+      "Put it on PATH or set LLVC_ONNXRUNTIME_DLL before running executables.")
+  endif()
 else()
   target_compile_definitions(llvc_core PUBLIC LLVC_ENABLE_ONNXRUNTIME=0)
 endif()
+
+function(llvc_copy_onnxruntime_dll target_name)
+  if(WIN32 AND LLVC_ENABLE_ONNXRUNTIME AND LLVC_ONNXRUNTIME_DLL)
+    add_custom_command(TARGET ${target_name} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${LLVC_ONNXRUNTIME_DLL}"
+        "$<TARGET_FILE_DIR:${target_name}>"
+      COMMENT "Copying ONNX Runtime DLL next to ${target_name}")
+  endif()
+endfunction()
 
 if(MSVC)
   target_compile_options(llvc_core PRIVATE /W4 /permissive-)
@@ -97,6 +127,7 @@ if(LLVC_BUILD_TESTS)
     tests/test_spsc_ring_buffer.cpp)
 
   target_link_libraries(llvc_tests PRIVATE llvc_core)
+  llvc_copy_onnxruntime_dll(llvc_tests)
   add_test(NAME llvc_tests COMMAND llvc_tests)
 endif()
 
@@ -106,6 +137,7 @@ if(LLVC_BUILD_BENCHMARKS)
     benchmarks/bench_audio_pipeline.cpp)
 
   target_link_libraries(llvc_benchmark_cli PRIVATE llvc_core)
+  llvc_copy_onnxruntime_dll(llvc_benchmark_cli)
 endif()
 
 if(LLVC_BUILD_JUCE_APP)
@@ -139,6 +171,7 @@ if(LLVC_BUILD_JUCE_APP)
       PRIVATE
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0)
+    llvc_copy_onnxruntime_dll(llvc_realtime_app)
   else()
     message(FATAL_ERROR
       "LLVC_BUILD_JUCE_APP is ON, but JUCE was not found. Set LLVC_JUCE_DIR or LLVC_FETCH_JUCE=ON.")

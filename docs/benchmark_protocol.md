@@ -31,12 +31,18 @@ build\manual\llvc_benchmark_cli.exe --iterations 128 --dummy-delay-us 1000 --csv
 Optional ONNX backend smoke benchmark:
 
 ```powershell
-build\manual\llvc_benchmark_cli.exe --iterations 32 `
-  --onnx-model C:\path\to\model.onnx `
+py -m pip install -r tools\requirements-model.txt
+py tools\create_identity_onnx.py --output models\identity_audio_1x1x128.onnx `
+  --channels 1 --frames 128
+build\onnx-local\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model models\identity_audio_1x1x128.onnx `
   --onnx-channels 1 `
   --onnx-frames 128 `
   --onnx-warmup 2
 ```
+
+The generated identity model verifies ONNX Runtime load/run overhead for the
+current tensor contract. Do not use it as a quality benchmark.
 
 Current stages:
 

@@ -14,6 +14,21 @@ Model integration is intentionally deferred until the audio pipeline is stable.
 
 Track candidates here once the ONNX dummy backend is working.
 
+## Smoke Test Model
+
+`tools/create_identity_onnx.py` can generate a fixed-shape identity model for
+ONNX Runtime load/run validation:
+
+```powershell
+py -m pip install -r tools\requirements-model.txt
+py tools\create_identity_onnx.py --output models\identity_audio_1x1x128.onnx `
+  --channels 1 --frames 128
+```
+
+This model only copies input audio to output audio. It is useful for measuring
+backend overhead and verifying the C++ ONNX path, but it is not a voice
+conversion model.
+
 ## Sprint 5 Backend Status
 
 The current inference path uses `DummyVoiceConversionBackend` to verify load,

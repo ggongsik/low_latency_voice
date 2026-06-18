@@ -59,8 +59,8 @@ After enabling ONNX Runtime, the same CLI can run a backend-only ONNX smoke
 benchmark. The shape options must match the model input/output contract.
 
 ```powershell
-build\manual\llvc_benchmark_cli.exe --iterations 32 `
-  --onnx-model C:\path\to\model.onnx `
+build\onnx-local\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model models\identity_audio_1x1x128.onnx `
   --onnx-channels 1 `
   --onnx-frames 128 `
   --onnx-warmup 2
@@ -83,16 +83,40 @@ https://onnxruntime.ai/docs/get-started/with-cpp.html or
 https://github.com/microsoft/onnxruntime/releases, then point
 `LLVC_ONNXRUNTIME_ROOT` at that installation:
 
+This is a C++/CMake project, not a .NET project. Do not use
+`dotnet add package Microsoft.ML.OnnxRuntime`; that command requires a `.csproj`
+file and installs the .NET binding, not the native C++ package used here.
+
+Recommended Windows native install:
+
 ```powershell
-cmake -S . -B build/onnx-local -G Ninja `
-  -DLLVC_ENABLE_ONNXRUNTIME=ON `
-  -DLLVC_ONNXRUNTIME_ROOT=C:\path\to\onnxruntime
-cmake --build build/onnx-local
+powershell -ExecutionPolicy Bypass -File tools\install_onnxruntime_windows.ps1
+```
+
+The script installs ONNX Runtime under `third_party\onnxruntime`, which is the
+default root used by the `onnx-local` CMake preset.
+
+```powershell
+cmake --preset onnx-local
+cmake --build --preset onnx-local
 ```
 
 The current ONNX backend expects one float32 input tensor and one float32 output
 tensor, both with static shape `[1, channels, frames]`. It is intended as the
 CPU baseline before execution-provider-specific tuning.
+
+To generate a tiny identity model for smoke testing:
+
+```powershell
+py -m pip install -r tools\requirements-model.txt
+py tools\create_identity_onnx.py --output models\identity_audio_1x1x128.onnx `
+  --channels 1 --frames 128
+build\onnx-local\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model models\identity_audio_1x1x128.onnx `
+  --onnx-channels 1 `
+  --onnx-frames 128 `
+  --onnx-warmup 2
+```
 
 ## Roadmap
 

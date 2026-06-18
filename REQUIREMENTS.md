@@ -41,19 +41,24 @@ cmake --build build\juce-local
 | --- | --- | --- |
 | ONNX Runtime C/C++ package | https://onnxruntime.ai/docs/get-started/with-cpp.html and https://github.com/microsoft/onnxruntime/releases | Set `LLVC_ENABLE_ONNXRUNTIME=ON` and either `LLVC_ONNXRUNTIME_ROOT`, or both `LLVC_ONNXRUNTIME_INCLUDE_DIR` and `LLVC_ONNXRUNTIME_LIBRARY`. |
 
+Do not use `dotnet add package Microsoft.ML.OnnxRuntime` in this repository.
+That command is for .NET projects with a `.csproj` file. This project links the
+native C/C++ ONNX Runtime package through CMake.
+
 CPU example:
 
 ```powershell
-cmake -S . -B build\onnx-local -G Ninja `
-  -DLLVC_ENABLE_ONNXRUNTIME=ON `
-  -DLLVC_ONNXRUNTIME_ROOT=C:\dev\onnxruntime
-cmake --build build\onnx-local
+powershell -ExecutionPolicy Bypass -File tools\install_onnxruntime_windows.ps1
+cmake --preset onnx-local
+cmake --build --preset onnx-local
 ```
 
 If using a manually unpacked release, the root should contain an `include`
 directory with `onnxruntime_cxx_api.h` and a `lib` directory containing the ONNX
 Runtime library. On Windows, make sure the ONNX Runtime `.dll` is available next
-to the executable or on `PATH` before running.
+to the executable or on `PATH` before running. The `onnx-local` preset defaults
+to `third_party\onnxruntime`, and CMake copies `onnxruntime.dll` next to built
+executables when it can find the DLL under that root.
 
 Current backend contract:
 
@@ -66,8 +71,11 @@ Current backend contract:
 Backend smoke benchmark:
 
 ```powershell
-build\manual\llvc_benchmark_cli.exe --iterations 32 `
-  --onnx-model C:\path\to\model.onnx `
+py -m pip install -r tools\requirements-model.txt
+py tools\create_identity_onnx.py --output models\identity_audio_1x1x128.onnx `
+  --channels 1 --frames 128
+build\onnx-local\llvc_benchmark_cli.exe --iterations 32 `
+  --onnx-model models\identity_audio_1x1x128.onnx `
   --onnx-channels 1 `
   --onnx-frames 128 `
   --onnx-warmup 2
